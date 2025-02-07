@@ -106,4 +106,4 @@ class Parser:
             if page_tables:
                 table_list.append(page_tables)
 
-        return images_list, text_list, table_list
+        return text_list, table_list, images_list
