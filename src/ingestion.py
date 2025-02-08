@@ -1,6 +1,9 @@
 """Document parsing"""
 import base64
+import asyncio
+import nest_asyncio
 from llama_parse import LlamaParse
+nest_asyncio.apply()
 
 
 class Parser:
@@ -19,7 +22,7 @@ class Parser:
         self.image_download_path = image_download_path
         self.parser = LlamaParse(
             result_type="markdown",
-            # invalidate_cache=True
+            premium_mode=True
         )
 
 
@@ -30,16 +33,39 @@ class Parser:
 
     def encode_image(self, img_path):
         """Encode image to base64 string"""
-        with open(img_path,'rb') as f:
+        with open(img_path, 'rb') as f:
             return base64.b64encode(f.read()).decode('utf-8')
+
+
+    async def async_get_images(self, obj):
+        """Asynchronously get images using LlamaParse"""
+        return await self.parser.aget_images(obj, download_path=self.image_download_path)
 
 
     def process_images(self, obj):
         """Download images from PDF and encode as base64"""
         encoded_images = []
-        image_dicts = self.parser.get_images(obj, download_path=self.image_download_path)
-        for image in image_dicts:
-            encoded_images.append(self.encode_image(image['path']))
+
+        # Get the current event loop or create a new one
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        try:
+            # Run the async operation in the event loop
+            image_dicts = loop.run_until_complete(self.async_get_images(obj))
+
+            # Process images
+            for image in image_dicts:
+                if image['path'].endswith("png"):
+                    encoded_images.append(self.encode_image(image['path']))
+
+        except Exception as e:
+            print(f"Error processing images: {str(e)}")
+            return []
+
         return encoded_images
 
 
@@ -54,17 +80,15 @@ class Parser:
                 table_list.append(item.get('md', item.get('value', '')))
                 i += 1
             elif item['type'] == 'heading':
-                # Process heading and check if the next item is text to merge
                 heading_md = item.get('md', item.get('value', ''))
                 heading_md = ' '.join(heading_md.split())
                 combined_text = heading_md
 
-                # If the heading is immediately followed by a text item, merge them.
                 if i + 1 < len(items) and items[i + 1]['type'] == 'text':
                     text_md = items[i + 1].get('md', items[i + 1].get('value', ''))
                     text_md = ' '.join(text_md.split())
                     combined_text = f"{heading_md}\n\n{text_md}"
-                    i += 2  # Skip the merged text item
+                    i += 2
                 else:
                     i += 1
 
@@ -78,7 +102,6 @@ class Parser:
                 if text_list:
                     text_list[-1] += "\n\n" + normalized_text
                 else:
-                    # If there's no previous text, add it as a new item.
                     text_list.append(normalized_text)
                 i += 1
             else:
@@ -102,8 +125,8 @@ class Parser:
             items = page['items']
             page_text, page_tables = self.extract_content(items)
             if page_text:
-                text_list.append(page_text)
+                text_list.extend(page_text)
             if page_tables:
-                table_list.append(page_tables)
+                table_list.extend(page_tables)
 
         return text_list, table_list, images_list
