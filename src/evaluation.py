@@ -46,7 +46,7 @@ class RAGEvaluator:
                 f.write("--------------\n\n")
                 scores.append(score)
 
-            final_score = round((sum(scores) / 15) * 100, 2)
+            final_score = round((sum(scores) / (15*len(questions))) * 100, 2)
             f.write(f"Final score: {final_score}\n")
             f.write("====================================================\n\n\n")
 
