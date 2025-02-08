@@ -5,19 +5,25 @@ from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 from langchain_core.documents import Document
 from langchain_qdrant import Qdrant
 from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams
 from langchain.storage import InMemoryStore
 from langchain.retrievers.multi_vector import MultiVectorRetriever
-from qdrant_client.models import Distance, VectorParams
 
 
 class Retriever:
+    """A class for generating summaries and creating a multi-modal retriever from texts, tables, and images."""
+
     def __init__(self, llm, embedding_model):
+        """Initializes retriever with language model and embedding model components."""
+
         super().__init__()
         self.llm =llm
         self.embedding_model = embedding_model
 
 
     def summarize_text_tables(self, texts, tables):
+        """Generate concise summaries for provided texts and tables using a language model."""
+
         text_table_summarization_prompt = """
         You are an assistant responsible for summarizing the provided {element_type} from the "Attention is all you need" paper. 
         Your task is to generate a concise summary of the content found in the chunk below.
@@ -45,6 +51,8 @@ class Retriever:
 
 
     def summrize_images(self, images):
+        """Generate detailed summaries for provided images"""
+
         image_summarization_prompt = """
         You are an expert in analyzing images.
         Your task is to provide a detailed, technical breakdown of the given image. 
@@ -71,6 +79,8 @@ class Retriever:
 
 
     def add_summary_to_retriever(self, elements, summaries, retriever, id_key):
+        """Add summarized documents to the retriever's vectorstore and docstore with unique identifiers."""
+
         doc_ids = [str(uuid.uuid4()) for _ in elements]
         summary_docs = [
              Document(page_content=summary, metadata={id_key: doc_ids[i]})
@@ -81,11 +91,13 @@ class Retriever:
 
 
     def make_retriever(self, texts, tables, images):
+        """Create and populate a multi-modal retriever with summaries from texts, tables, and images."""
+
         qdrant_client = QdrantClient(":memory:")
         collection_name = "multi_rag"
         qdrant_client.create_collection(
             collection_name=collection_name,
-            vectors_config=VectorParams(size=1024, distance=Distance.COSINE)
+            vectors_config=VectorParams(size=1536, distance=Distance.COSINE)
         )
         vectorstore = Qdrant(
             client=qdrant_client,
@@ -99,6 +111,9 @@ class Retriever:
             vectorstore=vectorstore,
             docstore=store,
             id_key=id_key,
+            search_kwargs={
+                "k": 5
+            }
         )
 
         # getting the text, tables and images summaries and add them to the retriever
