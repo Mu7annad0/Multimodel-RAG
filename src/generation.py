@@ -8,7 +8,6 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from src.ingestion import Parser
 from src.retriever import Retriever
-from src.evaluation import RAGEvaluator
 
 
 class Generator:
@@ -20,7 +19,6 @@ class Generator:
         self.embedding_model = embedding_model
         self.parser = Parser(pdf_path)
         self.retriever = Retriever(llm, embedding_model)
-        self.evaluater = RAGEvaluator(llm)
 
 
     def parse(self):
