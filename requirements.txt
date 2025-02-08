@@ -1,0 +1,6 @@
+langchain-openai==0.2.14
+llama-index-readers-llama-parse==0.4.0
+llama-parse==0.5.19
+nest-asyncio==1.6.0
+python-dotenv==1.0.1
+streamlit==1.42.0
