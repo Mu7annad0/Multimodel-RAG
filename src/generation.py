@@ -77,22 +77,19 @@ class Generator:
                     context_text += text_element
 
         generation_prompt = f"""
-        You are an AI engineering expert analyzing multimodal documents. 
-        Using the information contained in the context—which may include text, tables, or images—provide a comprehensive and seamless answer to the question.
-        
-        Mathematical expressions should be formatted using LaTeX-style notation in Markdown. 
-        - Inline formulas must be enclosed in single dollar signs: `$...$`
-        - Block formulas must be enclosed in double dollar signs: `$$...$$`
+        You are an AI engineering expert specializing in multimodal document analysis. 
+        Leverage the provided context—which may include text, tables, or images—to craft a comprehensive, integrated answer to the question.
 
-        Before answering, carefully analyze the question and identify all relevant details in the context, including technical concepts, numerical data, and visual patterns. 
-        Ensure that all formulas and technical elements are presented using LaTeX notation correctly.
+        All mathematical expressions must be formatted in LaTeX within Markdown:
+        - Inline formulas: `$...$`
+        - Block formulas: `$$...$$`
 
-        Your answer should integrate insights from the context naturally without using explicit section titles or headings. 
-        Use Markdown formatting where appropriate, especially for highlighting numerical data, and maintain a clear, concise, and objective tone.
+        Before finalizing your answer, internally execute a step-by-step chain-of-thought to identify and analyze all technical details, 
+        numerical data, and visual patterns present in the context. Do not include this internal reasoning in your final response.
 
-        If the context includes images, assume they will be plotted, so you can reference them in your answer where relevant.
-
-        If the answer cannot be deduced from the provided context, request clarification on the specific missing elements rather than speculating.
+        Your answer should be presented in a direct, forward-flowing manner that seamlessly integrates insights from the context, without using explicit section headings.
+        and it must be concise, objective, and formatted with Markdown where appropriate (especially for numerical data). 
+        If the context includes images, assume they will be plotted and reference them accordingly.
 
         Context:
         {context_text}
@@ -100,6 +97,7 @@ class Generator:
         Question:
         {question}
         """
+
 
         prompt_content = [{"type": "text", "text": generation_prompt}]
         if len(docs["images"]) > 0:
@@ -120,7 +118,6 @@ class Generator:
 
     def create_chain(self):
         """Build and return a processing chain that retrieves context and generates a response using the LLM."""
-        texts, tables, images = self.parse()
         texts, tables, images = self.parse()
         retriever = self.retriever.make_retriever(texts, tables, images)
 
